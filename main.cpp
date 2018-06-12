@@ -5,17 +5,22 @@
 #include "literal.hpp"
 #include "clause.hpp"
 #include "resolution_graph.hpp"
+#include "graph_builder.hpp"
 
 int main()
 {
+	ignore_mode ignore_mode = learn;
+
 	std::string line;
-	ResolutionGraph r;
+	ResolutionGraph r(ignore_mode);
 	while(std::getline(std::cin, line))
 	{
 		std::istringstream ss(line);
 
 		std::string instruction;
 		ss >> instruction;
+
+		//std::cout << line << std::endl;
 
 		if(instruction == "NV")
 		{
@@ -53,37 +58,92 @@ int main()
 			ss >> ls >> ref;
 			r.propagate(ls, ref);
 		}
+		else if(instruction == "PU")
+		{
+			std::string ls;
+			ss >> ls;
+			Literal l(ls);
+			r.propagate(l);
+		}
 		else if(instruction == "U")
 		{
 			std::vector<Literal> empty = {};
-			Clause remaining(empty);
+			std::shared_ptr<const Clause> remaining;
 
 			while(true)
 			{
+				bool should_read = true;
+
 				if(instruction == "U")
 				{
 					int ref;
 					ss >> ref;
-					std::shared_ptr<Clause> c = r.clause_by_cref(ref);
-					Clause intermediate = remaining.resolve_with(*c.get());
-					remaining = intermediate;
+					std::vector<Literal> to_skip;
+
+					while(true)
+					{
+						// Read one more line and see if we get an "S" instruction
+						std::getline(std::cin, line);
+						ss = std::istringstream(line);
+						ss >> instruction;
+						should_read = false;
+					
+						if(instruction == "S")
+						{
+							int num_skipped;
+							ss >> num_skipped;
+							should_read = true;
+
+							std::string literal;
+
+							for(int i=0; i < num_skipped; i++)
+							{
+								ss >> literal;
+								to_skip.push_back(Literal(literal));
+							}
+
+						}
+						else
+						{
+							break;
+						}
+					}
+
+					// Om skippas, uppdatera till annan clause
+					// Om inget skippas, hämta cref direkt
+					std::shared_ptr<const Clause> c = r.clause_by_cref(ref);
+
+					if(to_skip.size() > 0)
+					{
+						c = r.skip(ref, to_skip);
+					}
+
+					if(remaining == nullptr)
+					{
+						remaining = c;
+					}
+					else
+					{
+						remaining = Clause::resolve(remaining, c);
+					}
+
 				}
 				else if(instruction == "LU")
 				{
 					std::string l;
 					ss >> l;
-					assert(remaining.unit());
-					assert(remaining.first_literal() == Literal(l));
+					Literal expected_unit(l);
 
-					r.add_unit(std::make_shared<Clause>(remaining));
+					assert(remaining->unit() || ignore_mode == none);
+					assert(remaining->first_literal() == expected_unit || ignore_mode == none);
+					r.add_unit(std::make_shared<const Clause>(Clause(*remaining, true)), expected_unit);
 					break;
 				}
-				else if(instruction == "L")
+				else if(instruction == "L" || instruction == "LU")
 				{
 					
 					int ref, num_literals;
 					std::vector<Literal> literals;
-
 					ss >> ref >> num_literals;
 
 					std::string ls;
@@ -95,15 +155,32 @@ int main()
 
 					Clause should_be(literals);
 
-					assert(should_be == remaining);
+					//std::cout << should_be << " vs " << *remaining << std::endl;
+					assert(should_be == *remaining.get() || ignore_mode == none);
 
-					r.add_clause(std::make_shared<Clause>(remaining), ref);
+					r.add_clause(std::make_shared<const Clause>(Clause(*remaining, true)), ref);
 					break;
+				}
+				else if(instruction == "MNM")
+				{
+					// TODO: fix
+					int ref;
+					ss >> ref;
+
+					std::shared_ptr<const Clause> c = r.clause_by_cref(ref);
+					//std::cout << "Using cref " << ref << ", " << *c << " to go from " << *remaining << " to ";
+					remaining = Clause::resolve(remaining, c);
+					//std::cout << *remaining << std::endl;
 				}
 				else
 				{
 					assert(instruction == "");
 				}
+
+
+				// Some branches need to read input
+				// If they have been executed, do not read one more line
+				if( ! should_read) continue;
 
 				if( ! std::getline(std::cin, line)) break;
 				ss = std::istringstream(line);
@@ -118,9 +195,59 @@ int main()
 			r.backtrack(level);
 
 		}
+		else if(instruction == "RS")
+		{
+			r.restart();
+		}
+		else if(instruction == "C")
+		{
+			int ref;
+			ss >> ref;
+
+			GraphBuilder gb(r, ref, true);
+			gb.print_graphviz();
+			statistics s = gb.vertex_statistics();
+
+			std::cout << "Axioms: " << s.used_axioms << " used vs " << s.unused_axioms << " unused" << std::endl;
+			std::cout << "Learned: " << s.used_learned << " used vs " << s.unused_learned << " unused" << std::endl;
+			std::cout << "Intermediate: " << s.used_intermediate << " used vs " << s.unused_intermediate << " unused" << std::endl;
+			std::cout << "Tree violations " << s.tree_edge_violations << " edges to " << s.tree_vertex_violations << " vertices" << std::endl;
+		}
+		else if(instruction == "R")
+		{
+			int ref;
+			ss >> ref;
+			r.remove_clause(ref);
+		}
+		else if(instruction == "M")
+		{
+			std::vector<std::pair<int, int> > moves;
+
+			while(true)
+			{
+				if(instruction == "M")
+				{
+					int from, to;
+					ss >> from >> to;
+					moves.push_back(std::make_pair(from, to));
+				}
+				else if(instruction == "RD")
+				{
+					r.relocate(moves);
+					break;
+				}
+
+				if( ! std::getline(std::cin, line)) break;
+				ss = std::istringstream(line);
+				ss >> instruction;
+			}
+		}
+		else if(instruction == "RD")
+		{
+		}
 		else
 		{
-			std::cout << instruction << std::endl;
+			//std::cout << instruction << std::endl;
 		}
 	}
 }
