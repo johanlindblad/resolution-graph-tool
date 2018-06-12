@@ -4,10 +4,13 @@ GraphBuilder::GraphBuilder(const ResolutionGraph& _rg, int conflict_ref, bool _b
 {
 	node_index = 0;
 
-	clause_ref empty_clause = resolve_conflict(conflict_ref);
+	empty_clause = resolve_conflict(conflict_ref);
 	assert(empty_clause->empty());
-	build_used_graph(empty_clause);
+	build_used_graph();
 	add_unused();
+
+	// This takes a very long time
+	calculate_regularity_measures();
 }
 
 clause_ref GraphBuilder::resolve_conflict(int conflict_ref)
@@ -34,7 +37,7 @@ clause_ref GraphBuilder::resolve_conflict(int conflict_ref)
 	return remaining;
 }
 
-void GraphBuilder::build_used_graph(clause_ref empty_clause)
+void GraphBuilder::build_used_graph()
 {
 	// Start from the empty clause and do a BFS to build complete graph
 	// of all used nodes
@@ -170,7 +173,8 @@ void GraphBuilder::print_graphviz() const
 {
 	assert(build_graph);
 	label_writer wr(g);
-	boost::write_graphviz(std::cout, g, wr);
+	edge_label_writer ewr(g);
+	boost::write_graphviz(std::cout, g, wr, ewr);
 }
 
 void GraphBuilder::clear_unused()
@@ -214,5 +218,75 @@ int GraphBuilder::next_index()
 	{
 		node_index++;
 		return node_index - 1;
+	}
+}
+
+void GraphBuilder::calculate_regularity_measures()
+{
+	std::map<int, int> times_used;
+
+	enum vertex_status { unhandled, used_first, used_both };
+	typedef std::pair<clause_ref, vertex_status> state;
+	std::stack<state> stack;
+	stack.push(state(empty_clause, unhandled));
+	// Our stack consists of complete "breadcrumbs", with full path
+	// as well as the status of all nodes
+	// We first go "left" (first parent) as far as we can,
+	// then "right" (second parent) as far as we can and finally
+	// when both paths are explored, go back to parent and mark
+	// the resolved away literal as used one time less
+
+	while( ! stack.empty())
+	{
+		state s = stack.top();stack.pop();
+
+		clause_ref go_from = s.first;
+		vertex_status status = s.second;
+
+		//std::cout << "At " << *go_from << " with status " << status << std::endl;
+
+		if(go_from->is_axiom())
+		{
+			//std::cout << "Reached leaf " << *go_from << std::endl;
+			bool violations = false;
+
+			for(std::pair<int, int> p : times_used)
+			{
+				if(p.second > 1)
+				{
+					this->s.regularity_edge_violations += p.second - 1;
+					violations = true;
+				}
+			}
+
+			if(violations) this->s.regularity_path_violations++;
+
+		}
+		else if(status == unhandled)
+		{
+			int removed_variable = go_from->removed_variable().value();
+			times_used[removed_variable]++;
+			stack.push(state(go_from, used_first));
+			stack.push(state(go_from->resolved_from().first, unhandled));
+		}
+		else if(status == used_first)
+		{
+			stack.push(state(go_from, used_both));
+			stack.push(state(go_from->resolved_from().second, unhandled));
+		}
+		else if(status == used_both)
+		{
+			int removed_variable = go_from->removed_variable().value();
+			times_used[removed_variable]--;
+			//std::cout << "Done with " << *go_from << std::endl;
+		}
+	}
+
+	// When done, all variables should be marked as used 0 times
+	// Otherwise, we forgot to subtract somewhere
+	for(auto it=times_used.begin(); it != times_used.end(); it++)
+	{
+		int times = it->second;
+		assert(times == 0);
 	}
 }
