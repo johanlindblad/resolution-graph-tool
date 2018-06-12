@@ -30,7 +30,7 @@ void ResolutionGraph::decide(const Literal l)
 {
 	decision_level += 1;
 	index[l.variable()] = trail.size();
-	trail.push_back(std::make_tuple(decision_level, l, -1));
+	trail.push_back(std::make_tuple(decision_level, l, -1, nullptr));
 }
 
 void ResolutionGraph::propagate(const Literal& l)
@@ -38,7 +38,7 @@ void ResolutionGraph::propagate(const Literal& l)
 	assert(unit_map.count(l.variable()) > 0);
 	int i = unit_map[l.variable()];
 	index[l.variable()] = trail.size();
-	trail.push_back(std::make_tuple(decision_level, l, i));
+	trail.push_back(std::make_tuple(decision_level, l, i, clauses[i]));
 }
 
 void ResolutionGraph::propagate(const Literal& l, int cref)
@@ -62,7 +62,7 @@ void ResolutionGraph::propagate(const Literal& l, int cref)
 	}
 
 	index[l.variable()] = trail.size();
-	trail.push_back(std::make_tuple(decision_level, l, clause_index));
+	trail.push_back(std::make_tuple(decision_level, l, clause_index, via));
 }
 
 clause_ref ResolutionGraph::skip(int cref, std::vector<Literal>& literals)
@@ -181,7 +181,10 @@ void ResolutionGraph::remove_clause(int cref)
 {
 	int index = cref_map.at(cref);
 	cref_map.erase(cref);
-	clauses[index] = std::shared_ptr<const Clause>(nullptr);
+
+	// If we remove the clause from the list, it will not be part of the 
+	// "unused graph". However, the memory savings are significant.
+	//clauses[index] = std::shared_ptr<const Clause>(nullptr);
 }
 
 void ResolutionGraph::relocate(const std::vector<std::pair<int, int> >& moves)
@@ -198,4 +201,39 @@ void ResolutionGraph::relocate(const std::vector<std::pair<int, int> >& moves)
 	}	
 
 	std::swap(new_mapping, cref_map);
+}
+	
+clause_ref ResolutionGraph::minimize(clause_ref initial, std::vector<Literal> to_remove) const
+{
+	std::sort(to_remove.begin(), to_remove.end(), [&](const Literal & a, const Literal & b) -> bool
+		{ 
+			return index[a.variable()] > index[b.variable()]; 
+		}
+	);
+
+	clause_ref remaining = initial;
+
+	for(Literal l : to_remove)
+	{
+		int i = index[l.variable()];
+		//std::cout << "Index of " << l << " is " << i << std::endl;
+		trail_item item = trail[i];
+		clause_ref reason = std::get<3>(item);
+		//std::cout << "Reason is " << *reason << std::endl;
+		remaining = Clause::resolve(remaining, reason);
+	}
+	//std::cout << "--" << std::endl;
+
+	return remaining;
+}
+
+void ResolutionGraph::dump_trail() const
+{
+	for(int i=0; i < trail.size(); i++)
+	{
+		trail_item item = trail[i];
+		std::cout << std::get<0>(item) << ": " << std::get<1>(item);
+		if(std::get<2>(item) != -1) std::cout << " via " << *std::get<3>(item);
+		std::cout << std::endl;
+	}
 }

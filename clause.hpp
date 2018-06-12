@@ -2,13 +2,14 @@
 #include <vector>
 #include <algorithm>
 #include <utility>
+#include <boost/optional.hpp>
 #include "literal.hpp"
 
 class Clause
 {
 public:
 	Clause(std::vector<Literal> literals);
-	Clause(std::vector<Literal> literals, const std::shared_ptr<const Clause> from1, const std::shared_ptr<const Clause> from2);
+	Clause(std::vector<Literal> literals, const std::pair<std::shared_ptr<const Clause>, std::shared_ptr<const Clause> > source, int removed);
 	Clause(const Clause& other);
 
 	// Separate copy constructor for modifying is_learned (allows for const everywhere else)
@@ -24,6 +25,7 @@ public:
 	bool is_learned() const;
 	void is_learned(bool l);
 	bool is_axiom() const;
+	boost::optional<int> removed_variable() const;
 
 	static std::shared_ptr<const Clause> resolve(const std::shared_ptr<const Clause>& clause, const std::shared_ptr<const Clause>& other);
 	static std::shared_ptr<const Clause> resolve(const std::vector<std::shared_ptr<const Clause> > clauses);
@@ -32,4 +34,5 @@ private:
 	friend std::ostream & operator<<(std::ostream &os, const Clause& c);
 	std::pair<std::shared_ptr<const Clause>, std::shared_ptr<const Clause> > parents;
 	bool learned;
+	boost::optional<int> removed_var;
 };

@@ -5,6 +5,7 @@ GraphBuilder::GraphBuilder(const ResolutionGraph& _rg, int conflict_ref, bool _b
 	node_index = 0;
 
 	clause_ref empty_clause = resolve_conflict(conflict_ref);
+	assert(empty_clause->empty());
 	build_used_graph(empty_clause);
 	add_unused();
 }
@@ -26,7 +27,7 @@ clause_ref GraphBuilder::resolve_conflict(int conflict_ref)
 		int i = rg.index[last.variable()];
 		trail_item t = rg.trail[i];
 		int reason_index = std::get<2>(t);
-		clause_ref reason = rg.clauses[reason_index];
+		clause_ref reason = std::get<3>(t);
 		remaining = Clause::resolve(remaining, reason);
 	}
 

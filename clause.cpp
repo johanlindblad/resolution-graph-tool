@@ -12,13 +12,14 @@ Clause::Clause(std::vector<Literal> literals)
 	);
 
 	this->learned = false;
+	this->removed_var = boost::none;
 }
 
-Clause::Clause(std::vector<Literal> literals, std::shared_ptr<const Clause> from1, std::shared_ptr<const Clause> from2) : Clause(literals)
+Clause::Clause(std::vector<Literal> literals, const std::pair<std::shared_ptr<const Clause>, std::shared_ptr<const Clause> > source, int removed) : Clause(literals)
 {
-	this->parents.first = from1;
-	this->parents.second = from2;
+	this->parents = source;
 	this->learned = false;
+	this->removed_var = removed;
 }
 
 Clause::Clause(const Clause& other)
@@ -30,6 +31,7 @@ Clause::Clause(const Clause& other)
 
 	this->parents = other.parents;
 	this->learned = other.learned;
+	this->removed_var = other.removed_var;
 }
 
 Clause::Clause(const Clause& other, bool is_learned) : Clause(other)
@@ -56,7 +58,7 @@ std::shared_ptr<const Clause> Clause::resolve(const std::shared_ptr<const Clause
 	auto it1 = lits1.begin();
 	auto it2 = lits2.begin();
 	std::vector<Literal> out;
-	bool removed = false;
+	boost::optional<int> removed;
 
 	while(it1 != lits1.end() && it2 != lits2.end())
 	{
@@ -78,8 +80,8 @@ std::shared_ptr<const Clause> Clause::resolve(const std::shared_ptr<const Clause
 			}
 			else
 			{
-				assert(removed == false);
-				removed = true;
+				assert(removed == boost::none);
+				removed = it1->variable();
 			}
 
 			it1++;
@@ -98,7 +100,9 @@ std::shared_ptr<const Clause> Clause::resolve(const std::shared_ptr<const Clause
 		it2++;
 	}
 
-	return std::make_shared<Clause>(Clause(out, clause, other));
+	//assert(removed != boost::none);
+
+	return std::make_shared<Clause>(Clause(out, std::make_pair(clause, other), removed.value()));
 }
 
 std::shared_ptr<const Clause> Clause::resolve(const std::vector<std::shared_ptr<const Clause> > clauses)
@@ -172,4 +176,9 @@ bool Clause::is_axiom() const
 std::ostream & operator<<(std::ostream &os, const Clause& c)
 {
     return os << c.to_str();
+}
+
+boost::optional<int> Clause::removed_variable() const
+{
+	return this->removed_var;
 }

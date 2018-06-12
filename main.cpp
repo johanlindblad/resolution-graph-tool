@@ -9,7 +9,7 @@
 
 int main()
 {
-	ignore_mode ignore_mode = learn;
+	ignore_mode ignore_mode = resolve_unit;
 
 	std::string line;
 	ResolutionGraph r(ignore_mode);
@@ -74,6 +74,8 @@ int main()
 			{
 				bool should_read = true;
 
+				//std::cout << line << std::endl;
+
 				if(instruction == "U")
 				{
 					int ref;
@@ -109,13 +111,14 @@ int main()
 						}
 					}
 
-					// Om skippas, uppdatera till annan clause
-					// Om inget skippas, hämta cref direkt
 					std::shared_ptr<const Clause> c = r.clause_by_cref(ref);
+					//std::cout << "Using " << ref << " which is " << *c << std::endl;
+
 
 					if(to_skip.size() > 0)
 					{
 						c = r.skip(ref, to_skip);
+						//std::cout << "After skip " << *c << std::endl;
 					}
 
 					if(remaining == nullptr)
@@ -155,7 +158,9 @@ int main()
 
 					Clause should_be(literals);
 
+					//std::cout << line << std::endl;
 					//std::cout << should_be << " vs " << *remaining << std::endl;
+					//r.dump_trail();
 					assert(should_be == *remaining.get() || ignore_mode == none);
 
 					r.add_clause(std::make_shared<const Clause>(Clause(*remaining, true)), ref);
@@ -163,20 +168,30 @@ int main()
 				}
 				else if(instruction == "MNM")
 				{
-					// TODO: fix
-					int ref;
-					ss >> ref;
+					int count;
+					ss >> count;
+					std::vector<Literal> removed_literals;
+					std::string ls;
 
-					std::shared_ptr<const Clause> c = r.clause_by_cref(ref);
-					//std::cout << "Using cref " << ref << ", " << *c << " to go from " << *remaining << " to ";
-					remaining = Clause::resolve(remaining, c);
-					//std::cout << *remaining << std::endl;
+					for(int i=0; i < count; i++)
+					{
+						ss >> ls;
+						removed_literals.push_back(Literal(ls));
+					}
+
+					remaining = r.minimize(remaining, removed_literals);
+				}
+				else if(instruction == "B")
+				{
+					int level;
+					ss >> level;
+					r.backtrack(level);
 				}
 				else
 				{
+					std::cout << instruction << std::endl;
 					assert(instruction == "");
 				}
-
 
 				// Some branches need to read input
 				// If they have been executed, do not read one more line
@@ -205,7 +220,7 @@ int main()
 			ss >> ref;
 
 			GraphBuilder gb(r, ref, true);
-			gb.print_graphviz();
+			//gb.print_graphviz();
 			statistics s = gb.vertex_statistics();
 
 			std::cout << "Axioms: " << s.used_axioms << " used vs " << s.unused_axioms << " unused" << std::endl;

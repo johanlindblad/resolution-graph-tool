@@ -10,9 +10,10 @@
 enum ignore_mode { none, learn, resolve_unit };
 
 typedef std::shared_ptr<const Clause> clause_ref;
-// decision level, assignment, reason clause index
-typedef std::tuple<int, const Literal, int> trail_item;
-
+// decision level, assignment, reason clause index, reason clause pointer
+// (pointer only used to allow removing clauses from database without making
+// reference invalid)
+typedef std::tuple<int, const Literal, int, clause_ref> trail_item;
 
 class ResolutionGraph
 {
@@ -34,9 +35,12 @@ public:
 	void remove_clause(int cref);
 	void relocate(const std::vector<std::pair<int, int> >& moves);
 	clause_ref skip(int cref, std::vector<Literal>& skipped);
+	clause_ref minimize(clause_ref initial, std::vector<Literal> to_remove) const;
 
 	std::shared_ptr<const Clause> clause_by_cref(int cref) const;
 	std::shared_ptr<const Clause> unit_clause(const Literal& l) const;
+
+	void dump_trail() const;
 
 	friend class GraphBuilder;
 private:
