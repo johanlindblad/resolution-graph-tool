@@ -22,6 +22,8 @@ int main()
 	// resolved away during final conflict resolution)
 	ignore_mode ignore_mode = resolve_unit;
 
+	bool print_graph = false;
+
 	std::string line;
 	SolverShadow solver(ignore_mode);
 
@@ -232,8 +234,8 @@ int main()
 
 			// Change to true to have complete graph built
 			// Required for print_graphviz to work
-			ResolutionGraph gb(solver, ref, false);
-			//gb.print_graphviz();
+			ResolutionGraph gb(solver, ref, print_graph);
+			if(print_graph) gb.print_graphviz();
 			statistics s = gb.vertex_statistics();
 
 			std::cout << "Axioms vertices: " << s.used_axioms << " used vs " << s.unused_axioms << " unused" << std::endl;
