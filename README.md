@@ -16,3 +16,17 @@ build with debug symbols append `-DCMAKE_BUILD_TYPE=Debug`.
 
 ## Running
 1. Pipe minisat trace output to `./ResolutionGraph`.
+
+## Configuring
+Top of `main()` contains flags for ignore mode and whether to print GraphViz.
+
+# Interpreting GraphViz output
+* Edges are reversed (i.e. resolution gives edges from resulting clause to its
+two source clauses). This is because if we want to traverse the graph we will
+likely do it in that direction.
+* Edge labels are the variable that was removed as a result of the resolution.
+* Learned clauses have a turquoise background
+* Axiom clauses have a grey background
+* Intermediate clauses have a white background
+* Clauses that are not used in the final resolution refutation (or equivalently,
+are not reachable from the empty clause) are significantly smaller.

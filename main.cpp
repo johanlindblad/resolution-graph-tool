@@ -244,6 +244,7 @@ int main()
 			std::cout << "Tree violations in used graph " << s.tree_edge_violations << " edges to " << s.tree_vertex_violations << " vertices" << std::endl;
 			std::cout << "Regularity violations in used graph " << s.regularity_violations_total << " violations for " << s.regularity_violation_variables << " variables" << std::endl;
 			std::cout << "Max width " << s.width << std::endl;
+			break;
 		}
 		else if(instruction == "R")
 		{
