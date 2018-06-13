@@ -128,9 +128,8 @@ std::shared_ptr<const Clause> Clause::resolve(const std::shared_ptr<const Clause
 		it2++;
 	}
 
-	//assert(removed != boost::none);
+	assert(removed != boost::none);
 	
-
 	return std::make_shared<Clause>(Clause(out, std::make_pair(clause, other), removed.value()));
 }
 
@@ -170,6 +169,11 @@ bool Clause::operator==(const Clause& other) const
 std::vector<Literal> Clause::literals() const
 {
 	return std::vector<Literal>(this->literal_vector);
+}
+
+int Clause::width() const
+{
+	return this->literal_vector.size();
 }
 
 const std::pair<std::shared_ptr<const Clause>, std::shared_ptr<const Clause> > Clause::resolved_from() const

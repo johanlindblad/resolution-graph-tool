@@ -59,6 +59,8 @@ void GraphBuilder::build_used_graph()
 		else if(clause->is_learned()) s.used_learned++;
 		else s.used_intermediate++;
 
+		s.width = std::max(s.width, (long long) clause->width());
+
 		// Add all unvisited children to the graph
 		// and queue up all learned clauses for further
 		// traversal
@@ -187,6 +189,7 @@ void GraphBuilder::clear_unused()
 
 statistics GraphBuilder::vertex_statistics() const
 {
+	// Commented-out part which recalculates (some of) the statistics
 	/*statistics s;
 
 	TODO: tree violations
@@ -207,6 +210,7 @@ statistics GraphBuilder::vertex_statistics() const
 			else s.unused_intermediate++;
 		}
 	}*/
+
 
 	return s;
 }

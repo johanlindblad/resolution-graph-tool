@@ -19,6 +19,7 @@ public:
 	Literal first_literal() const;
 	bool operator ==(const Clause &other) const;
 	std::vector<Literal> literals() const;
+	int width() const;
 	const std::pair<std::shared_ptr<const Clause>, std::shared_ptr<const Clause> > resolved_from() const;
 	bool is_resolvent() const;
 	bool empty() const;
@@ -39,5 +40,5 @@ private:
 	boost::optional<int> removed_var;
 	std::vector<bool> removed_variables;
 	std::vector<bool> reremoved_variables;
-	int regularity_violations;
+	long long regularity_violations;
 };
