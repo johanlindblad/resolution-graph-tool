@@ -4,15 +4,27 @@
 #include <sstream>
 #include "literal.hpp"
 #include "clause.hpp"
+#include "solver_shadow.hpp"
 #include "resolution_graph.hpp"
-#include "graph_builder.hpp"
 
 int main()
 {
+	// Sets the ignore mode for the solver, i.e. how to handle skipped literals
+	// during analysis. The three modes are:
+	// 1. none => literals are not skipped (they are guaranteed to be removed during conflict resolution)
+	//            makes for the most tree-like resolution
+	// 2. learn => learn smaller clauses from resolving learned clauses or axioms with learned units
+	//             can make learned clause derivation non-trivial
+	// 3. resolve_unit => resolve with learned units to remove skipped literals, immediately after
+	// 		      using learned clause/axiom. Keeps learned clause derivation trivial.
+	//
+	// (modes 2 and 3 introduce regularity violations because skipped literals will also be
+	// resolved away during final conflict resolution)
 	ignore_mode ignore_mode = resolve_unit;
 
 	std::string line;
-	ResolutionGraph r(ignore_mode);
+	SolverShadow solver(ignore_mode);
+
 	while(std::getline(std::cin, line))
 	{
 		std::istringstream ss(line);
@@ -27,7 +39,7 @@ int main()
 			int num;
 			ss >> num;
 			
-			r.num_vars(num);
+			solver.num_vars(num);
 		}
 		else if(instruction == "I")
 		{
@@ -43,27 +55,27 @@ int main()
 				literals.push_back(Literal(ls));
 			}
 
-			r.add_clause(std::make_shared<Clause>(Clause(literals)), ref);
+			solver.add_clause(std::make_shared<Clause>(Clause(literals)), ref);
 		}
 		else if(instruction == "D")
 		{
 			std::string ls;
 			ss >> ls;
-			r.decide(ls);
+			solver.decide(ls);
 		}
 		else if(instruction == "P")
 		{
 			std::string ls;
 			int ref;
 			ss >> ls >> ref;
-			r.propagate(ls, ref);
+			solver.propagate(ls, ref);
 		}
 		else if(instruction == "PU")
 		{
 			std::string ls;
 			ss >> ls;
 			Literal l(ls);
-			r.propagate(l);
+			solver.propagate(l);
 		}
 		else if(instruction == "U")
 		{
@@ -111,13 +123,12 @@ int main()
 						}
 					}
 
-					std::shared_ptr<const Clause> c = r.clause_by_cref(ref);
+					std::shared_ptr<const Clause> c = solver.clause_by_cref(ref);
 					//std::cout << "Using " << ref << " which is " << *c << std::endl;
-
 
 					if(to_skip.size() > 0)
 					{
-						c = r.skip(ref, to_skip);
+						c = solver.skip(ref, to_skip);
 						//std::cout << "After skip " << *c << std::endl;
 					}
 
@@ -139,7 +150,7 @@ int main()
 
 					assert(remaining->unit() || ignore_mode == none);
 					assert(remaining->first_literal() == expected_unit || ignore_mode == none);
-					r.add_unit(std::make_shared<const Clause>(Clause(*remaining, true)), expected_unit);
+					solver.add_unit(std::make_shared<const Clause>(Clause(*remaining, true)), expected_unit);
 					break;
 				}
 				else if(instruction == "L" || instruction == "LU")
@@ -160,10 +171,10 @@ int main()
 
 					//std::cout << line << std::endl;
 					//std::cout << should_be << " vs " << *remaining << std::endl;
-					//r.dump_trail();
+					//solver.dump_trail();
 					assert(should_be == *remaining.get() || ignore_mode == none);
 
-					r.add_clause(std::make_shared<const Clause>(Clause(*remaining, true)), ref);
+					solver.add_clause(std::make_shared<const Clause>(Clause(*remaining, true)), ref);
 					break;
 				}
 				else if(instruction == "MNM")
@@ -179,13 +190,13 @@ int main()
 						removed_literals.push_back(Literal(ls));
 					}
 
-					remaining = r.minimize(remaining, removed_literals);
+					remaining = solver.minimize(remaining, removed_literals);
 				}
 				else if(instruction == "B")
 				{
 					int level;
 					ss >> level;
-					r.backtrack(level);
+					solver.backtrack(level);
 				}
 				else
 				{
@@ -207,34 +218,36 @@ int main()
 			int level;
 			ss >> level;
 
-			r.backtrack(level);
+			solver.backtrack(level);
 
 		}
 		else if(instruction == "RS")
 		{
-			r.restart();
+			solver.restart();
 		}
 		else if(instruction == "C")
 		{
 			int ref;
 			ss >> ref;
 
-			GraphBuilder gb(r, ref, true);
+			// Change to true to have complete graph built
+			// Required for print_graphviz to work
+			ResolutionGraph gb(solver, ref, false);
 			//gb.print_graphviz();
 			statistics s = gb.vertex_statistics();
 
-			std::cout << "Axioms: " << s.used_axioms << " used vs " << s.unused_axioms << " unused" << std::endl;
-			std::cout << "Learned: " << s.used_learned << " used vs " << s.unused_learned << " unused" << std::endl;
-			std::cout << "Intermediate: " << s.used_intermediate << " used vs " << s.unused_intermediate << " unused" << std::endl;
-			std::cout << "Tree violations " << s.tree_edge_violations << " edges to " << s.tree_vertex_violations << " vertices" << std::endl;
-			std::cout << "Regularity violations " << s.regularity_violations_total << " violations for " << s.regularity_violation_variables << " variables" << std::endl;
+			std::cout << "Axioms vertices: " << s.used_axioms << " used vs " << s.unused_axioms << " unused" << std::endl;
+			std::cout << "Learned vertices: " << s.used_learned << " used vs " << s.unused_learned << " unused" << std::endl;
+			std::cout << "Intermediate vertices: " << s.used_intermediate << " used vs " << s.unused_intermediate << " unused" << std::endl;
+			std::cout << "Tree violations in used graph " << s.tree_edge_violations << " edges to " << s.tree_vertex_violations << " vertices" << std::endl;
+			std::cout << "Regularity violations in used graph " << s.regularity_violations_total << " violations for " << s.regularity_violation_variables << " variables" << std::endl;
 			std::cout << "Max width " << s.width << std::endl;
 		}
 		else if(instruction == "R")
 		{
 			int ref;
 			ss >> ref;
-			r.remove_clause(ref);
+			solver.remove_clause(ref);
 		}
 		else if(instruction == "M")
 		{
@@ -250,7 +263,7 @@ int main()
 				}
 				else if(instruction == "RD")
 				{
-					r.relocate(moves);
+					solver.relocate(moves);
 					break;
 				}
 

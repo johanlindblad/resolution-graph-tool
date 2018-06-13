@@ -1,57 +1,33 @@
 #pragma once
-#include <vector>
-#include <memory>
-#include <map>
-#include <queue>
-#include <assert.h>
-#include "clause.hpp"
-#include "literal.hpp"
+#include "solver_shadow.hpp"
+#include "resolution_graph_extras.hpp"
 
-enum ignore_mode { none, learn, resolve_unit };
-
-typedef std::shared_ptr<const Clause> clause_ref;
-// decision level, assignment, reason clause index, reason clause pointer
-// (pointer only used to allow removing clauses from database without making
-// reference invalid)
-typedef std::tuple<int, const Literal, int, clause_ref> trail_item;
-
+// ResolutionGraph takes the information from the solver shadow and
+// calculates statistics on the resolution graph (and, given the build_graph
+// parameter, builds a graph using the Boost library, which can be printed as
+// graphviz)
 class ResolutionGraph
 {
 public:
-	ResolutionGraph(ignore_mode _mode);
-	void add_clause(const clause_ref c, int cref);
-	void add_unit(const clause_ref c);
-
-	// Needed because without literal skipping, we might learn a wider clause
-	// that should still be treated as a unit
-	void add_unit(const clause_ref c, const Literal l);
-
-	void decide(const Literal l);
-	void propagate(const Literal& l, int cref);
-	void propagate(const Literal& l);
-	void backtrack(int to_level);
-	void num_vars(int num_vars);
-	void restart();
-	void remove_clause(int cref);
-	void relocate(const std::vector<std::pair<int, int> >& moves);
-	clause_ref skip(int cref, std::vector<Literal>& skipped);
-	clause_ref minimize(clause_ref initial, std::vector<Literal> to_remove) const;
-
-	std::shared_ptr<const Clause> clause_by_cref(int cref) const;
-	std::shared_ptr<const Clause> unit_clause(const Literal& l) const;
-
-	void dump_trail() const;
-
-	friend class GraphBuilder;
+	ResolutionGraph(const SolverShadow& _rg, int conflict_ref, bool build_graph);
+	void print_graphviz() const;
+	void clear_unused();
+	statistics vertex_statistics() const;
 private:
-	std::vector<clause_ref> clauses;
-	std::map<int, int> cref_map;
-	std::map<int, int> unit_map;
-	std::vector<int> index;
+	clause_ref resolve_conflict(int conflict_ref);
+	void build_used_graph();
+	void add_unused();
+	int next_index();
 
-	int decision_level;
-	std::vector<trail_item> trail;
-	int first_learned_index;
-	ignore_mode mode;
-	std::map<std::string, int> clauses_with_ignored;
+	const SolverShadow& rg;
+	graph g;
+	std::map<const Clause*, int> learned_clause_index;
+	statistics s;
+	// Keep track of all learned clauses that have been used more than once
+	std::set<const Clause*> violating_learned;
+	const bool build_graph;
+	clause_ref empty_clause;
+
+	// Used when graph is not built
+	int node_index;
 };

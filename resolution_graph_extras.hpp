@@ -1,15 +1,17 @@
 #pragma once
-#include "resolution_graph.hpp"
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graphviz.hpp>
+#include "solver_shadow.hpp"
 
+// State that is needed by vertex (i.e. by clause)
 struct vertex_info
 { 
     clause_ref clause;
     bool used = true;
 };
 
+// The statistics that the grapher keeps track of
 struct statistics
 {
 	long long used_axioms = 0, used_intermediate = 0, used_learned = 0,
@@ -52,30 +54,4 @@ class edge_label_writer
 			}
 	private:
 		const graph& graph;
-};
-
-class GraphBuilder
-{
-public:
-	GraphBuilder(const ResolutionGraph& _rg, int conflict_ref, bool build_graph);
-	void print_graphviz() const;
-	void clear_unused();
-	statistics vertex_statistics() const;
-private:
-	clause_ref resolve_conflict(int conflict_ref);
-	void build_used_graph();
-	void add_unused();
-	int next_index();
-
-	const ResolutionGraph& rg;
-	graph g;
-	std::map<const Clause*, int> learned_clause_index;
-	statistics s;
-	// Keep track of all learned clauses that have been used more than once
-	std::set<const Clause*> violating_learned;
-	const bool build_graph;
-	clause_ref empty_clause;
-
-	// Used when graph is not built
-	int node_index;
 };
