@@ -26,6 +26,8 @@ public:
 	void is_learned(bool l);
 	bool is_axiom() const;
 	boost::optional<int> removed_variable() const;
+	int num_regularity_violations() const;
+	std::vector<int> regularity_violation_variables() const;
 
 	static std::shared_ptr<const Clause> resolve(const std::shared_ptr<const Clause>& clause, const std::shared_ptr<const Clause>& other);
 	static std::shared_ptr<const Clause> resolve(const std::vector<std::shared_ptr<const Clause> > clauses);
@@ -35,4 +37,7 @@ private:
 	std::pair<std::shared_ptr<const Clause>, std::shared_ptr<const Clause> > parents;
 	bool learned;
 	boost::optional<int> removed_var;
+	std::vector<bool> removed_variables;
+	std::vector<bool> reremoved_variables;
+	int regularity_violations;
 };

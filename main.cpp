@@ -9,7 +9,7 @@
 
 int main()
 {
-	ignore_mode ignore_mode = learn;
+	ignore_mode ignore_mode = none;
 
 	std::string line;
 	ResolutionGraph r(ignore_mode);
@@ -227,7 +227,7 @@ int main()
 			std::cout << "Learned: " << s.used_learned << " used vs " << s.unused_learned << " unused" << std::endl;
 			std::cout << "Intermediate: " << s.used_intermediate << " used vs " << s.unused_intermediate << " unused" << std::endl;
 			std::cout << "Tree violations " << s.tree_edge_violations << " edges to " << s.tree_vertex_violations << " vertices" << std::endl;
-			std::cout << "Regularity violations " << s.regularity_edge_violations << " edges on " << s.regularity_path_violations << " paths" << std::endl;
+			std::cout << "Regularity violations " << s.regularity_violations_total << " violations for " << s.regularity_violation_variables << " variables" << std::endl;
 		}
 		else if(instruction == "R")
 		{

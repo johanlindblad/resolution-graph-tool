@@ -15,7 +15,7 @@ struct statistics
 	int used_axioms = 0, used_intermediate = 0, used_learned = 0,
 	    unused_axioms = 0, unused_intermediate = 0, unused_learned = 0,
 	    tree_edge_violations = 0, tree_vertex_violations = 0,
-	    regularity_edge_violations = 0, regularity_path_violations = 0;
+	    regularity_violations_total = 0, regularity_violation_variables = 0;
 };
 
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, vertex_info> graph;
@@ -60,8 +60,6 @@ public:
 	void print_graphviz() const;
 	void clear_unused();
 	statistics vertex_statistics() const;
-	void calculate_regularity_measures();
-
 private:
 	clause_ref resolve_conflict(int conflict_ref);
 	void build_used_graph();
