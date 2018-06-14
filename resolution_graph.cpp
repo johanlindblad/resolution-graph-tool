@@ -116,6 +116,7 @@ void ResolutionGraph::add_unused()
 			clause_ref c = rg.clauses[i];
 			if(c == nullptr) continue;
 
+			assert(c->is_learned());
 			bool unexplained = learned_clause_index.count(c.get()) == 0;
 			if(unexplained) queue.push(queue_item(c, next_index()));
 		}

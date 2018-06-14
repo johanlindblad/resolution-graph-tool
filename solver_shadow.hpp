@@ -2,6 +2,7 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <set>
 #include <queue>
 #include <assert.h>
 #include "clause.hpp"
@@ -40,6 +41,9 @@ public:
 	void relocate(const std::vector<std::pair<int, int> >& moves);
 	clause_ref skip(int cref, std::vector<Literal>& skipped);
 	clause_ref minimize(clause_ref initial, std::vector<Literal> to_remove) const;
+	// Full is the mode that allows temporary new literals (intermediate steps in the
+	// implication graph)
+	clause_ref minimize_full(clause_ref initial, std::vector<Literal> to_remove) const;
 
 	std::shared_ptr<const Clause> clause_by_cref(int cref) const;
 	std::shared_ptr<const Clause> unit_clause(const Literal& l) const;
@@ -48,6 +52,8 @@ public:
 
 	friend class ResolutionGraph;
 private:
+	int num_vars() const;
+
 	std::vector<clause_ref> clauses;
 	std::map<int, int> cref_map;
 	std::map<int, int> unit_map;

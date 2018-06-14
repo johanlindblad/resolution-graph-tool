@@ -156,6 +156,11 @@ void SolverShadow::num_vars(int num_vars)
 	}
 }
 
+int SolverShadow::num_vars() const
+{
+	return index.size();
+}
+
 void SolverShadow::restart()
 {
 	backtrack(0);
@@ -210,7 +215,7 @@ clause_ref SolverShadow::minimize(clause_ref initial, std::vector<Literal> to_re
 			return index[a.variable()] > index[b.variable()]; 
 		}
 	);
-
+	
 	clause_ref remaining = initial;
 
 	for(Literal l : to_remove)
@@ -223,6 +228,56 @@ clause_ref SolverShadow::minimize(clause_ref initial, std::vector<Literal> to_re
 		remaining = Clause::resolve(remaining, reason);
 	}
 	//std::cout << "--" << std::endl;
+
+	return remaining;
+}
+
+clause_ref SolverShadow::minimize_full(clause_ref initial, std::vector<Literal> to_remove) const
+{
+	// Start with the literals to be removed and in reverse trail order,
+	// resolve with reason clauses. Literals in the reason are guaranteed
+	// to be either:
+	// * Decisions from the initial clause (otherwise minimization would not happen
+	//   as this introduces new literals)
+	// * Propagations from literals already in the initial clause
+	// * Propagations from literals which are implied by literals already
+	//   in the initial clause
+	//   Those of the third kind will temporarily introduce literals into
+	//   our learned clause which in turn need to be resolved with their
+	//   reasons until all temporarily introduced variables are removed
+	//   To handle this, we need to keep track of the variables that are 
+	//   in the initial clause as well as introduced but handled ones
+
+	std::vector<bool> initial_variables(num_vars(), false);
+	std::vector<bool> handled_variables(num_vars(), false);
+	for(const Literal& l : initial->literals()) initial_variables[l.variable()] = true;
+	clause_ref remaining = initial;
+
+	auto max = [&](const Literal & a, const Literal & b) -> bool
+	{ 
+		return index[a.variable()] < index[b.variable()]; 
+	};
+
+	while( ! to_remove.empty())
+	{
+		auto max_elem = std::max_element(to_remove.cbegin(), to_remove.cend(), max);
+		Literal remove(*max_elem);to_remove.erase(max_elem);
+		int i = index[remove.variable()];
+		trail_item item = trail[i];
+		clause_ref reason = std::get<3>(item);
+		assert(reason != nullptr);
+
+		for(Literal& l : reason->literals())
+		{
+			if(initial_variables[l.variable()] == true) continue;
+			if(handled_variables[l.variable()] == true) continue;
+			if(l.variable() == remove.variable()) continue;
+			to_remove.push_back(l);
+			handled_variables[l.variable()] = true;
+		}
+
+		remaining = Clause::resolve(remaining, reason);
+	}
 
 	return remaining;
 }

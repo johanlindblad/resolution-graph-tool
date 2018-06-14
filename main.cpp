@@ -171,11 +171,14 @@ int main()
 
 					Clause should_be(literals);
 
-					//std::cout << line << std::endl;
-					//std::cout << should_be << " vs " << *remaining << std::endl;
-					//solver.dump_trail();
+					if(!(should_be == (*remaining.get())) && ignore_mode != none)
+					{
+						std::cout << should_be << " vs " << *remaining << std::endl;
+						solver.dump_trail();
+					}
 					assert(should_be == *remaining.get() || ignore_mode == none);
 
+					//if(remaining->is_axiom()) std::cout << "WARNING: learned using only conflict clause" << std::endl;
 					solver.add_clause(std::make_shared<const Clause>(Clause(*remaining, true)), ref);
 					break;
 				}
@@ -193,6 +196,21 @@ int main()
 					}
 
 					remaining = solver.minimize(remaining, removed_literals);
+				}
+				else if(instruction == "MNM2")
+				{
+					int count;
+					ss >> count;
+					std::vector<Literal> removed_literals;
+					std::string ls;
+
+					for(int i=0; i < count; i++)
+					{
+						ss >> ls;
+						removed_literals.push_back(Literal(ls));
+					}
+
+					remaining = solver.minimize_full(remaining, removed_literals);
 				}
 				else if(instruction == "B")
 				{
