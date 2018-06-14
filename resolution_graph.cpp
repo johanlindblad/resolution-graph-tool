@@ -183,11 +183,6 @@ void ResolutionGraph::print_graphviz() const
 	boost::write_graphviz(std::cout, g, wr, ewr);
 }
 
-void ResolutionGraph::clear_unused()
-{
-	
-}
-
 statistics ResolutionGraph::vertex_statistics() const
 {
 	// Commented-out part which recalculates (some of) the statistics
@@ -226,5 +221,18 @@ int ResolutionGraph::next_index()
 	{
 		node_index++;
 		return node_index - 1;
+	}
+}
+
+void ResolutionGraph::remove_unused()
+{
+	for(auto it=vertices(g).first; it != vertices(g).second; it++)
+	{
+		if(! g[*it].used)
+		{
+			boost::clear_vertex(*it, g);
+			boost::remove_vertex(*it, g);
+			it--;
+		}
 	}
 }

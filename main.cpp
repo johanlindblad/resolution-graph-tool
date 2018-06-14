@@ -23,6 +23,7 @@ int main()
 	ignore_mode ignore_mode = resolve_unit;
 
 	bool print_graph = false;
+	bool print_with_unused = false;
 
 	std::string line;
 	SolverShadow solver(ignore_mode);
@@ -253,6 +254,7 @@ int main()
 			// Change to true to have complete graph built
 			// Required for print_graphviz to work
 			ResolutionGraph gb(solver, ref, print_graph);
+			if(print_graph && !print_with_unused) gb.remove_unused();
 			if(print_graph) gb.print_graphviz();
 			statistics s = gb.vertex_statistics();
 

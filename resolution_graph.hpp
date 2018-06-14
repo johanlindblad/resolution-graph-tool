@@ -11,8 +11,8 @@ class ResolutionGraph
 public:
 	ResolutionGraph(const SolverShadow& _rg, int conflict_ref, bool build_graph);
 	void print_graphviz() const;
-	void clear_unused();
 	statistics vertex_statistics() const;
+	void remove_unused();
 private:
 	clause_ref resolve_conflict(int conflict_ref);
 	void build_used_graph();
