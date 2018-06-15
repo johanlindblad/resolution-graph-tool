@@ -19,7 +19,7 @@ private:
 	void add_unused();
 	int next_index();
 
-	const SolverShadow& rg;
+	const SolverShadow& solver;
 	graph g;
 	std::map<const Clause*, int> learned_clause_index;
 	statistics s;

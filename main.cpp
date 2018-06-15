@@ -127,12 +127,10 @@ int main()
 					}
 
 					std::shared_ptr<const Clause> c = solver.clause_by_cref(ref);
-					//std::cout << "Using " << ref << " which is " << *c << std::endl;
 
 					if(to_skip.size() > 0)
 					{
 						c = solver.skip(ref, to_skip);
-						//std::cout << "After skip " << *c << std::endl;
 					}
 
 					if(remaining == nullptr)
@@ -156,7 +154,7 @@ int main()
 					solver.add_unit(std::make_shared<const Clause>(Clause(*remaining, true)), expected_unit);
 					break;
 				}
-				else if(instruction == "L" || instruction == "LU")
+				else if(instruction == "L")
 				{
 					
 					int ref, num_literals;
@@ -171,12 +169,6 @@ int main()
 					}
 
 					Clause should_be(literals);
-
-					if(!(should_be == (*remaining.get())) && ignore_mode != none)
-					{
-						std::cout << should_be << " vs " << *remaining << std::endl;
-						solver.dump_trail();
-					}
 					assert(should_be == *remaining.get() || ignore_mode == none);
 
 					//if(remaining->is_axiom()) std::cout << "WARNING: learned using only conflict clause" << std::endl;
@@ -251,14 +243,12 @@ int main()
 			int ref;
 			ss >> ref;
 
-			// Change to true to have complete graph built
-			// Required for print_graphviz to work
 			ResolutionGraph gb(solver, ref, print_graph);
 			if(print_graph && !print_with_unused) gb.remove_unused();
 			if(print_graph) gb.print_graphviz();
 			statistics s = gb.vertex_statistics();
 
-			std::cout << "Axioms vertices: " << s.used_axioms << " used vs " << s.unused_axioms << " unused" << std::endl;
+			std::cout << "Axiom vertices: " << s.used_axioms << " used vs " << s.unused_axioms << " unused" << std::endl;
 			std::cout << "Learned vertices: " << s.used_learned << " used vs " << s.unused_learned << " unused" << std::endl;
 			std::cout << "Intermediate vertices: " << s.used_intermediate << " used vs " << s.unused_intermediate << " unused" << std::endl;
 			std::cout << "Tree violations in used graph " << s.tree_edge_violations << " edges to " << s.tree_vertex_violations << " vertices" << std::endl;

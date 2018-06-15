@@ -65,6 +65,7 @@ Clause::Clause(const Clause& other)
 Clause::Clause(const Clause& other, bool is_learned) : Clause(other)
 {
 	this->learned = is_learned;
+	assert(this->is_resolvent());
 }
 
 std::string const Clause::to_str() const

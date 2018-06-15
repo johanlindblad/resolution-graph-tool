@@ -1,6 +1,6 @@
 #include "resolution_graph.hpp"
 
-ResolutionGraph::ResolutionGraph(const SolverShadow& _rg, int conflict_ref, bool _build_graph) : rg(_rg), build_graph(_build_graph)
+ResolutionGraph::ResolutionGraph(const SolverShadow& _solver, int conflict_ref, bool _build_graph) : solver(_solver), build_graph(_build_graph)
 {
 	node_index = 0;
 
@@ -11,14 +11,16 @@ ResolutionGraph::ResolutionGraph(const SolverShadow& _rg, int conflict_ref, bool
 
 	// This will give the result for the resolution refutation, not including any
 	// violations for unused learned clauses
-	// (that could, if relevant, be counted too)
+	// (those could, if relevant, be counted too)
 	s.regularity_violations_total = empty_clause->num_regularity_violations();
 	s.regularity_violation_variables = empty_clause->regularity_violation_variables().size();
 }
 
+// Start with the final conflict clause and resolve with the reasons for all variables,
+// in reverse assignment order
 clause_ref ResolutionGraph::resolve_conflict(int conflict_ref)
 {
-	std::shared_ptr<const Clause> remaining = rg.clause_by_cref(conflict_ref);
+	std::shared_ptr<const Clause> remaining = solver.clause_by_cref(conflict_ref);
 
 	// Resolve conflict down to the empty clause
 	while( ! remaining->empty())
@@ -27,11 +29,11 @@ clause_ref ResolutionGraph::resolve_conflict(int conflict_ref)
 		Literal last = remaining->literals().front();
 		for(Literal& l : remaining->literals())
 		{
-			if(rg.index[l.variable()] > rg.index[last.variable()]) last = l;
+			if(solver.index[l.variable()] > solver.index[last.variable()]) last = l;
 		}
 
-		int i = rg.index[last.variable()];
-		trail_item t = rg.trail[i];
+		int i = solver.index[last.variable()];
+		trail_item t = solver.trail[i];
 		int reason_index = std::get<2>(t);
 		clause_ref reason = std::get<3>(t);
 		remaining = Clause::resolve(remaining, reason);
@@ -109,11 +111,11 @@ void ResolutionGraph::add_unused()
 
 	// Next, add all unvisited learned clauses to the queue and traverse
 	// the whole unused part of the graph
-	if(rg.first_learned_index != -1)
+	if(solver.first_learned_index != -1)
 	{
-		for(int i=rg.first_learned_index; i < rg.clauses.size(); i++)
+		for(int i=solver.first_learned_index; i < solver.clauses.size(); i++)
 		{
-			clause_ref c = rg.clauses[i];
+			clause_ref c = solver.clauses[i];
 			if(c == nullptr) continue;
 
 			assert(c->is_learned());
@@ -226,6 +228,8 @@ int ResolutionGraph::next_index()
 
 void ResolutionGraph::remove_unused()
 {
+	assert(build_graph);
+
 	for(auto it=vertices(g).first; it != vertices(g).second; it++)
 	{
 		if(! g[*it].used)

@@ -19,6 +19,10 @@ void SolverShadow::add_unit(std::shared_ptr<const Clause> c)
 	add_unit(c, c->first_literal());
 }
 
+// Used to handle cases when we ignore skipped clauses, and so the solver
+// learns a unit but we do not. The extra argument specifies the unit
+// the solver claims to have learned, so that we can still store this in the
+// unit map
 void SolverShadow::add_unit(std::shared_ptr<const Clause> c, Literal l)
 {
 	int clause_index = clauses.size();
@@ -33,6 +37,8 @@ void SolverShadow::decide(const Literal l)
 	trail.push_back(std::make_tuple(decision_level, l, -1, nullptr));
 }
 
+// If we propagate a unit without a given reason, the resaon must be the learned
+// unit clause corresponding to this literal
 void SolverShadow::propagate(const Literal& l)
 {
 	assert(unit_map.count(l.variable()) > 0);
@@ -48,6 +54,9 @@ void SolverShadow::propagate(const Literal& l, int cref)
 	assert(clauses[clause_index] != nullptr);
 	std::shared_ptr<const Clause> via = clause_by_cref(cref);
 
+	// If we are on decision level 0, a unit propagation is essentially
+	// a learned clause
+	// This learned clause is then naturally derived from other units at level 0
 	if(decision_level == 0 && mode != none)
 	{
 		std::vector<clause_ref> chain = {via};
@@ -65,12 +74,16 @@ void SolverShadow::propagate(const Literal& l, int cref)
 	trail.push_back(std::make_tuple(decision_level, l, clause_index, via));
 }
 
+// Start with the clause with the given cref and skip the given literals
+// (which have to be propagated at level 0)
 clause_ref SolverShadow::skip(int cref, std::vector<Literal>& literals)
 {
 	int clause_index = cref_map.at(cref);
 	clause_ref clause = clauses[clause_index];
 	if(mode == none) return clause;
 
+	// Skip in trail order so that if we learn a new clause with skipped literals,
+	// we repeat ourselves as little as possible
 	std::sort(literals.begin(), literals.end(), [&](const Literal & a, const Literal & b) -> bool
 		{ 
 			return index[a.variable()] < index[b.variable()]; 
@@ -94,6 +107,9 @@ clause_ref SolverShadow::skip(int cref, std::vector<Literal>& literals)
 	}
 	else
 	{
+		// We learn clauses without the skipped literals
+		// The "key" here should essentially be {clause index, skipped literals},
+		// where the parent of {x, [1,2,3]} is {x, [1,2]}
 		int i = clause_index;
 		int first_literal_index = 0;
 		std::string key = std::to_string(i) + "_without";
@@ -123,8 +139,6 @@ clause_ref SolverShadow::skip(int cref, std::vector<Literal>& literals)
 		return clauses[i];
 	}
 }
-
-
 
 void SolverShadow::backtrack(int to_level)
 {
@@ -207,9 +221,13 @@ void SolverShadow::relocate(const std::vector<std::pair<int, int> >& moves)
 
 	std::swap(new_mapping, cref_map);
 }
-	
+
+// The simple minimization mode, where we remove literals whose reason clause is a subset
+// of in the learned clause
+// We trust the trace output that this is the case and simply resolve with the reason clauses
 clause_ref SolverShadow::minimize(clause_ref initial, std::vector<Literal> to_remove) const
 {
+	// We require reverse assignment order to guarantee a valid resolution
 	std::sort(to_remove.begin(), to_remove.end(), [&](const Literal & a, const Literal & b) -> bool
 		{ 
 			return index[a.variable()] > index[b.variable()]; 
@@ -221,17 +239,15 @@ clause_ref SolverShadow::minimize(clause_ref initial, std::vector<Literal> to_re
 	for(Literal l : to_remove)
 	{
 		int i = index[l.variable()];
-		//std::cout << "Index of " << l << " is " << i << std::endl;
 		trail_item item = trail[i];
 		clause_ref reason = std::get<3>(item);
-		//std::cout << "Reason is " << *reason << std::endl;
 		remaining = Clause::resolve(remaining, reason);
 	}
-	//std::cout << "--" << std::endl;
 
 	return remaining;
 }
 
+// The full minimization mode, where we allow temporarily introduced literals
 clause_ref SolverShadow::minimize_full(clause_ref initial, std::vector<Literal> to_remove) const
 {
 	// Start with the literals to be removed and in reverse trail order,
@@ -253,6 +269,7 @@ clause_ref SolverShadow::minimize_full(clause_ref initial, std::vector<Literal> 
 	for(const Literal& l : initial->literals()) initial_variables[l.variable()] = true;
 	clause_ref remaining = initial;
 
+	// Lambda function which finds the literal whose variable has the greatest index
 	auto max = [&](const Literal & a, const Literal & b) -> bool
 	{ 
 		return index[a.variable()] < index[b.variable()]; 
