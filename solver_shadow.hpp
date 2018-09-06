@@ -8,7 +8,7 @@
 #include "clause.hpp"
 #include "literal.hpp"
 
-enum ignore_mode { none, learn, resolve_unit };
+enum ignore_mode { none=0, learn, resolve_unit };
 
 typedef std::shared_ptr<const Clause> clause_ref;
 // decision level, assignment, reason clause index, reason clause pointer

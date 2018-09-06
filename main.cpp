@@ -6,27 +6,64 @@
 #include "clause.hpp"
 #include "solver_shadow.hpp"
 #include "resolution_graph.hpp"
+#include <boost/program_options.hpp>
 
-int main()
+int main(int argc, char** argv)
 {
-	// Sets the ignore mode for the solver, i.e. how to handle skipped literals
-	// during analysis. The three modes are:
-	// 1. none => literals are not skipped (they are guaranteed to be removed during conflict resolution)
+	// The three ignore modes modes are:
+	// 0. none => literals are not skipped (they are guaranteed to be removed during conflict resolution)
 	//            makes for the most tree-like resolution
-	// 2. learn => learn smaller clauses from resolving learned clauses or axioms with learned units
+	// 1. learn => learn smaller clauses from resolving learned clauses or axioms with learned units
 	//             can make learned clause derivation non-trivial
-	// 3. resolve_unit => resolve with learned units to remove skipped literals, immediately after
+	// 2. resolve_unit => resolve with learned units to remove skipped literals, immediately after
 	// 		      using learned clause/axiom. Keeps learned clause derivation trivial.
 	//
 	// (modes 2 and 3 introduce regularity violations because skipped literals will also be
 	// resolved away during final conflict resolution)
-	ignore_mode ignore_mode = resolve_unit;
+	ignore_mode mode;
 
 	bool print_graph = false;
 	bool print_with_unused = false;
 
+	boost::program_options::options_description desc("Supported options");
+	desc.add_options()
+		("help", "show this help")
+		("ignore-mode", boost::program_options::value<int>(), "ignore mode (0=none, 1=learn, 2=resolve_unit) (see code for details)")
+		("print-graph", "print out resolution graph as DOT (instead of statistics)")
+		("include-unused", "include unused learned clauses in graph")
+	;
+
+	boost::program_options::variables_map vm;
+	boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
+	boost::program_options::notify(vm);
+
+	if (vm.count("help"))
+	{
+		std::cout << desc << "\n";
+		return 1;
+	}
+
+	if(vm.count("ignore-mode"))
+	{
+		unsigned int raw = vm["ignore-mode"].as<int>();
+		if(raw > 2)
+		{
+			std::cout << "ERROR: Ignore mode must be between 0 and 2" << std::endl;
+			return 1;
+		}
+					
+		mode = static_cast<ignore_mode>(raw);
+	}
+
+	if(vm.count("print-graph"))
+	{
+		print_graph = true;
+		if(vm.count("include-unused")) print_with_unused = true;
+	}	
+
+
 	std::string line;
-	SolverShadow solver(ignore_mode);
+	SolverShadow solver(mode);
 
 	while(std::getline(std::cin, line))
 	{
@@ -149,8 +186,8 @@ int main()
 					ss >> l;
 					Literal expected_unit(l);
 
-					assert(remaining->unit() || ignore_mode == none);
-					assert(remaining->first_literal() == expected_unit || ignore_mode == none);
+					assert(remaining->unit() || mode == none);
+					assert(remaining->first_literal() == expected_unit || mode == none);
 					solver.add_unit(std::make_shared<const Clause>(Clause(*remaining, true)), expected_unit);
 					break;
 				}
@@ -169,7 +206,7 @@ int main()
 					}
 
 					Clause should_be(literals);
-					assert(should_be == *remaining.get() || ignore_mode == none);
+					assert(should_be == *remaining.get() || mode == none);
 
 					//if(remaining->is_axiom()) std::cout << "WARNING: learned using only conflict clause" << std::endl;
 					solver.add_clause(std::make_shared<const Clause>(Clause(*remaining, true)), ref);
@@ -244,17 +281,23 @@ int main()
 			ss >> ref;
 
 			ResolutionGraph gb(solver, ref, print_graph);
-			if(print_graph && !print_with_unused) gb.remove_unused();
-			if(print_graph) gb.print_graphviz();
-			statistics s = gb.vertex_statistics();
+			if(print_graph)
+			{
+				if(!print_with_unused) gb.remove_unused();
+				gb.print_graphviz();
+			}
+			else
+			{	
+				statistics s = gb.vertex_statistics();
 
-			std::cout << "Axiom vertices: " << s.used_axioms << " used vs " << s.unused_axioms << " unused" << std::endl;
-			std::cout << "Learned vertices: " << s.used_learned << " used vs " << s.unused_learned << " unused" << std::endl;
-			std::cout << "Intermediate vertices: " << s.used_intermediate << " used vs " << s.unused_intermediate << " unused" << std::endl;
-			std::cout << "Tree violations in used graph " << s.tree_edge_violations << " edges to " << s.tree_vertex_violations << " vertices" << std::endl;
-			std::cout << "Tree copy cost " << s.copy_cost << std::endl;
-			std::cout << "Regularity violations in used graph " << s.regularity_violations_total << " violations for " << s.regularity_violation_variables << " variables" << std::endl;
-			std::cout << "Max width " << s.width << std::endl;
+				std::cout << "Axiom vertices: " << s.used_axioms << " used vs " << s.unused_axioms << " unused" << std::endl;
+				std::cout << "Learned vertices: " << s.used_learned << " used vs " << s.unused_learned << " unused" << std::endl;
+				std::cout << "Intermediate vertices: " << s.used_intermediate << " used vs " << s.unused_intermediate << " unused" << std::endl;
+				std::cout << "Tree violations in used graph " << s.tree_edge_violations << " edges to " << s.tree_vertex_violations << " vertices" << std::endl;
+				std::cout << "Tree copy cost " << s.copy_cost << std::endl;
+				std::cout << "Regularity violations in used graph " << s.regularity_violations_total << " violations for " << s.regularity_violation_variables << " variables" << std::endl;
+				std::cout << "Max width " << s.width << std::endl;
+			}
 			break;
 		}
 		else if(instruction == "R")
