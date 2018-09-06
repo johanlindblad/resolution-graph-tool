@@ -122,7 +122,14 @@ void ResolutionGraph::add_unused()
 
 			assert(c->is_learned());
 			bool unexplained = learned_clause_index.count(c.get()) == 0;
-			if(unexplained) queue.push(queue_item(c, next_index()));
+
+			if(unexplained)
+			{
+				int index = next_index();
+				queue.push(queue_item(c, index));
+				learned_clause_index[c.get()] = index;
+			}
+
 		}
 
 		while( ! queue.empty())
