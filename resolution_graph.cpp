@@ -81,6 +81,7 @@ void ResolutionGraph::build_used_graph()
 			{
 				sub_index_1 = learned_clause_index.at(parents.first.get());
 				s.tree_edge_violations++;
+				s.copy_cost += parents.second->copy_cost();
 				violating_learned.insert(parents.first.get());
 			}
 			if(build_graph) boost::add_edge(index, sub_index_1, g);
@@ -95,6 +96,7 @@ void ResolutionGraph::build_used_graph()
 			{
 				sub_index_2 = learned_clause_index.at(parents.second.get());
 				s.tree_edge_violations++;
+				s.copy_cost += parents.second->copy_cost();
 				violating_learned.insert(parents.second.get());
 			}
 			if(build_graph) boost::add_edge(index, sub_index_2, g);

@@ -252,6 +252,7 @@ int main()
 			std::cout << "Learned vertices: " << s.used_learned << " used vs " << s.unused_learned << " unused" << std::endl;
 			std::cout << "Intermediate vertices: " << s.used_intermediate << " used vs " << s.unused_intermediate << " unused" << std::endl;
 			std::cout << "Tree violations in used graph " << s.tree_edge_violations << " edges to " << s.tree_vertex_violations << " vertices" << std::endl;
+			std::cout << "Tree copy cost " << s.copy_cost << std::endl;
 			std::cout << "Regularity violations in used graph " << s.regularity_violations_total << " violations for " << s.regularity_violation_variables << " variables" << std::endl;
 			std::cout << "Max width " << s.width << std::endl;
 			break;

@@ -14,6 +14,9 @@ Clause::Clause(std::vector<Literal> literals)
 	this->learned = false;
 	this->removed_var = boost::none;
 	this->regularity_violations = 0;
+
+	// An axiom clause has no parents, and so copying it costs 1
+	this->cost = 1;
 }
 
 Clause::Clause(std::vector<Literal> literals, const std::pair<std::shared_ptr<const Clause>, std::shared_ptr<const Clause> > source, int removed) : Clause(literals)
@@ -48,6 +51,9 @@ Clause::Clause(std::vector<Literal> literals, const std::pair<std::shared_ptr<co
 		//std::cout << "Removed " << removed << " again for " << *this << std::endl;
 	}
 	this->removed_variables[removed] = true;
+
+	// An intermediate clause costs 1 to copy itself, plus whatever the parents cost
+	this->cost = 1 + source.first->cost + source.second->cost;
 }
 
 Clause::Clause(const Clause& other)
@@ -60,6 +66,7 @@ Clause::Clause(const Clause& other)
 	this->removed_variables = other.removed_variables;
 	this->reremoved_variables = other.reremoved_variables;
 	this->regularity_violations = other.regularity_violations;
+	this->cost = other.cost;
 }
 
 Clause::Clause(const Clause& other, bool is_learned) : Clause(other)
@@ -220,6 +227,11 @@ boost::optional<int> Clause::removed_variable() const
 int Clause::num_regularity_violations() const
 {
 	return this->regularity_violations;
+}
+
+long long Clause::copy_cost() const
+{
+	return this->cost;
 }
 
 std::vector<int> Clause::regularity_violation_variables() const
