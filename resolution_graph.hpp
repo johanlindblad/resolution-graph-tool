@@ -1,6 +1,7 @@
 #pragma once
 #include "solver_shadow.hpp"
 #include "resolution_graph_extras.hpp"
+#include <iostream>
 
 // ResolutionGraph takes the information from the solver shadow and
 // calculates statistics on the resolution graph (and, given the build_graph
@@ -10,7 +11,7 @@ class ResolutionGraph
 {
 public:
 	ResolutionGraph(const SolverShadow& _rg, int conflict_ref, bool build_graph);
-	void print_graphviz() const;
+	void print_graphviz(std::ostream& stream) const;
 	statistics vertex_statistics() const;
 	void remove_unused();
 private:

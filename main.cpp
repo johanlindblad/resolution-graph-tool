@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <utility>
 #include <vector>
 #include <sstream>
@@ -25,11 +26,13 @@ int main(int argc, char** argv)
 	bool print_graph = false;
 	bool print_with_unused = false;
 
+	std::fstream graph_file;
+
 	boost::program_options::options_description desc("Supported options");
 	desc.add_options()
 		("help", "show this help")
 		("ignore-mode", boost::program_options::value<int>(), "ignore mode (0=none, 1=learn, 2=resolve_unit) (see code for details)")
-		("print-graph", "print out resolution graph as DOT (instead of statistics)")
+		("print-graph", boost::program_options::value<std::string>(), "print out resolution graph as DOT to the given filename")
 		("include-unused", "include unused learned clauses in graph")
 	;
 
@@ -57,7 +60,9 @@ int main(int argc, char** argv)
 
 	if(vm.count("print-graph"))
 	{
+		std::string file_name = vm["print-graph"].as<std::string>();
 		print_graph = true;
+		graph_file.open(file_name, std::fstream::out);
 		if(vm.count("include-unused")) print_with_unused = true;
 	}	
 
@@ -284,23 +289,21 @@ int main(int argc, char** argv)
 			if(print_graph)
 			{
 				if(!print_with_unused) gb.remove_unused();
-				gb.print_graphviz();
+				gb.print_graphviz(graph_file);
 			}
-			else
-			{	
-				statistics s = gb.vertex_statistics();
 
-				std::cout << "{";
-				std::cout << "\"used_axioms\": " << s.used_axioms << ", \"unused_axioms\": " << s.unused_axioms << ",";
-				std::cout << "\"used_intermediate\": " << s.used_intermediate << ", \"unused_intermediate\": " << s.unused_intermediate << ",";
-				std::cout << "\"used_learned\": " << s.used_learned << ", \"unused_learned\": " << s.unused_learned << ",";
+			statistics s = gb.vertex_statistics();
 
-				std::cout << "\"tree_edge_violations\": " << s.tree_edge_violations << ", \"tree_vertex_violations\": " << s.tree_vertex_violations << ",";
-				std::cout << "\"tree_copy_cost\": " << s.copy_cost << ", ";
+			std::cout << "{";
+			std::cout << "\"used_axioms\": " << s.used_axioms << ", \"unused_axioms\": " << s.unused_axioms << ",";
+			std::cout << "\"used_intermediate\": " << s.used_intermediate << ", \"unused_intermediate\": " << s.unused_intermediate << ",";
+			std::cout << "\"used_learned\": " << s.used_learned << ", \"unused_learned\": " << s.unused_learned << ",";
 
-				std::cout << "\"regularity_violations_total\": " << s.regularity_violations_total << ", \"regularity_violation_variables\": " << s.regularity_violation_variables << ",";
-				std::cout << "\"max_width\": " << s.width << "}" << std::endl;
-			}
+			std::cout << "\"tree_edge_violations\": " << s.tree_edge_violations << ", \"tree_vertex_violations\": " << s.tree_vertex_violations << ",";
+			std::cout << "\"tree_copy_cost\": " << s.copy_cost << ", ";
+
+			std::cout << "\"regularity_violations_total\": " << s.regularity_violations_total << ", \"regularity_violation_variables\": " << s.regularity_violation_variables << ",";
+			std::cout << "\"max_width\": " << s.width << "}" << std::endl;
 			break;
 		}
 		else if(instruction == "R")

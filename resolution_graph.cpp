@@ -186,12 +186,12 @@ void ResolutionGraph::add_unused()
 	}
 }
 
-void ResolutionGraph::print_graphviz() const
+void ResolutionGraph::print_graphviz(std::ostream& stream) const
 {
 	assert(build_graph);
 	label_writer wr(g);
 	edge_label_writer ewr(g);
-	boost::write_graphviz(std::cout, g, wr, ewr);
+	boost::write_graphviz(stream, g, wr, ewr);
 }
 
 statistics ResolutionGraph::vertex_statistics() const
