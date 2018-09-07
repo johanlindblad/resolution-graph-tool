@@ -290,13 +290,16 @@ int main(int argc, char** argv)
 			{	
 				statistics s = gb.vertex_statistics();
 
-				std::cout << "Axiom vertices: " << s.used_axioms << " used vs " << s.unused_axioms << " unused" << std::endl;
-				std::cout << "Learned vertices: " << s.used_learned << " used vs " << s.unused_learned << " unused" << std::endl;
-				std::cout << "Intermediate vertices: " << s.used_intermediate << " used vs " << s.unused_intermediate << " unused" << std::endl;
-				std::cout << "Tree violations in used graph " << s.tree_edge_violations << " edges to " << s.tree_vertex_violations << " vertices" << std::endl;
-				std::cout << "Tree copy cost " << s.copy_cost << std::endl;
-				std::cout << "Regularity violations in used graph " << s.regularity_violations_total << " violations for " << s.regularity_violation_variables << " variables" << std::endl;
-				std::cout << "Max width " << s.width << std::endl;
+				std::cout << "{";
+				std::cout << "\"used_axioms\": " << s.used_axioms << ", \"unused_axioms\": " << s.unused_axioms << ",";
+				std::cout << "\"used_intermediate\": " << s.used_intermediate << ", \"unused_intermediate\": " << s.unused_intermediate << ",";
+				std::cout << "\"used_learned\": " << s.used_learned << ", \"unused_learned\": " << s.unused_learned << ",";
+
+				std::cout << "\"tree_edge_violations\": " << s.tree_edge_violations << ", \"tree_vertex_violations\": " << s.tree_vertex_violations << ",";
+				std::cout << "\"tree_copy_cost\": " << s.copy_cost << ", ";
+
+				std::cout << "\"regularity_violations_total\": " << s.regularity_violations_total << ", \"regularity_violation_variables\": " << s.regularity_violation_variables << ",";
+				std::cout << "\"max_width\": " << s.width << "}" << std::endl;
 			}
 			break;
 		}
