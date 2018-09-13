@@ -25,6 +25,7 @@ int main(int argc, char** argv)
 
 	bool print_graph = false;
 	bool print_with_unused = false;
+	bool print_input = false;
 
 	std::fstream graph_file;
 
@@ -34,6 +35,7 @@ int main(int argc, char** argv)
 		("ignore-mode", boost::program_options::value<int>(), "ignore mode (0=none, 1=learn, 2=resolve_unit) (see code for details)")
 		("print-graph", boost::program_options::value<std::string>(), "print out resolution graph as DOT to the given filename")
 		("include-unused", "include unused learned clauses in graph")
+		("print-input", "print out input lines as they are consumed")
 	;
 
 	boost::program_options::variables_map vm;
@@ -66,6 +68,8 @@ int main(int argc, char** argv)
 		if(vm.count("include-unused")) print_with_unused = true;
 	}	
 
+	if(vm.count("print-input")) print_input = true;
+
 
 	std::string line;
 	SolverShadow solver(mode);
@@ -77,7 +81,7 @@ int main(int argc, char** argv)
 		std::string instruction;
 		ss >> instruction;
 
-		//std::cout << line << std::endl;
+		print_input && std::cout << line << std::endl;
 
 		if(instruction == "NV")
 		{
@@ -131,7 +135,7 @@ int main(int argc, char** argv)
 			{
 				bool should_read = true;
 
-				//std::cout << line << std::endl;
+				print_input && std::cout << line << std::endl;
 
 				if(instruction == "U")
 				{
@@ -146,7 +150,7 @@ int main(int argc, char** argv)
 						ss = std::istringstream(line);
 						ss >> instruction;
 						should_read = false;
-					
+
 						if(instruction == "S")
 						{
 							int num_skipped;
@@ -211,6 +215,7 @@ int main(int argc, char** argv)
 					}
 
 					Clause should_be(literals);
+
 					assert(should_be == *remaining.get() || mode == none);
 
 					//if(remaining->is_axiom()) std::cout << "WARNING: learned using only conflict clause" << std::endl;
@@ -255,7 +260,7 @@ int main(int argc, char** argv)
 				}
 				else
 				{
-					std::cout << instruction << std::endl;
+					print_input && std::cout << instruction << std::endl;
 					assert(instruction == "");
 				}
 
@@ -340,7 +345,7 @@ int main(int argc, char** argv)
 		}
 		else
 		{
-			//std::cout << instruction << std::endl;
+			print_input && std::cout << instruction << std::endl;
 		}
 	}
 }
