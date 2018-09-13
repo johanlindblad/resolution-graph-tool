@@ -8,7 +8,7 @@ void SolverShadow::add_clause(std::shared_ptr<const Clause> c, int cref)
 {
 	int clause_index = clauses.size();
 	clauses.push_back(c);
-	cref_map.insert(std::make_pair(cref, clause_index));
+	cref_map[cref] = clause_index;
 
 	if(c->is_learned() && first_learned_index == -1) first_learned_index = clause_index;
 }
