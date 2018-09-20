@@ -21,12 +21,12 @@ struct statistics
 	    width = 0, copy_cost = 0;
 };
 
-typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, vertex_info> graph;
+typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, vertex_info> Graph;
 
 class label_writer
 {
 	public:
-		label_writer(const graph& g) : graph(g) {}
+		label_writer(const Graph& g) : graph(g) {}
 		template <class VertexOrEdge>
 			void operator()(std::ostream& out, const VertexOrEdge& v) const
 			{
@@ -40,18 +40,18 @@ class label_writer
 				if( ! graph[v].used) out << " [fontsize=6] [width=0.25] [height=0.25]";
 			}
 	private:
-		const graph& graph;
+		const Graph& graph;
 };
 
 class edge_label_writer
 {
 	public:
-		edge_label_writer(const graph& g) : graph(g) {}
+		edge_label_writer(const Graph& g) : graph(g) {}
 		template <class VertexOrEdge>
 			void operator()(std::ostream& out, const VertexOrEdge& e) const
 			{
 				out << "[label=\"" << graph[source(e, graph)].clause->removed_variable().value() << "\"]";
 			}
 	private:
-		const graph& graph;
+		const Graph& graph;
 };

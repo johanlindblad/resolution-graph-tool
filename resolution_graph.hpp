@@ -21,7 +21,7 @@ private:
 	int next_index();
 
 	const SolverShadow& solver;
-	graph g;
+	Graph g;
 	std::map<const Clause*, int> learned_clause_index;
 	statistics s;
 	// Keep track of all learned clauses that have been used more than once

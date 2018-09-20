@@ -5,6 +5,8 @@
 #include <boost/optional.hpp>
 #include "literal.hpp"
 
+#include <memory>
+
 class Clause
 {
 public:

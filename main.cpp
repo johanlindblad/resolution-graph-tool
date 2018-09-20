@@ -8,6 +8,7 @@
 #include "solver_shadow.hpp"
 #include "resolution_graph.hpp"
 #include <boost/program_options.hpp>
+#include <memory>
 
 int main(int argc, char** argv)
 {
