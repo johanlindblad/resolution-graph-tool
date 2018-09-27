@@ -9,6 +9,7 @@
 #include "resolution_graph.hpp"
 #include <boost/program_options.hpp>
 #include <memory>
+#include <stdlib.h>
 
 int main(int argc, char** argv)
 {
@@ -310,7 +311,7 @@ int main(int argc, char** argv)
 
 			std::cout << "\"regularity_violations_total\": " << s.regularity_violations_total << ", \"regularity_violation_variables\": " << s.regularity_violation_variables << ",";
 			std::cout << "\"max_width\": " << s.width << "}" << std::endl;
-			break;
+			exit(0);
 		}
 		else if(instruction == "R")
 		{
