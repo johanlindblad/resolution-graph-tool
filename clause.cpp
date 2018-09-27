@@ -224,12 +224,12 @@ boost::optional<int> Clause::removed_variable() const
 	return this->removed_var;
 }
 
-int Clause::num_regularity_violations() const
+long long Clause::num_regularity_violations() const
 {
 	return this->regularity_violations;
 }
 
-long long Clause::copy_cost() const
+long double Clause::copy_cost() const
 {
 	return this->cost;
 }
