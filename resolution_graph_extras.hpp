@@ -17,9 +17,8 @@ struct statistics
 	long long used_axioms = 0, used_intermediate = 0, used_learned = 0,
 	    unused_axioms = 0, unused_intermediate = 0, unused_learned = 0,
 	    tree_edge_violations = 0, tree_vertex_violations = 0,
-	    regularity_violations_total = 0, regularity_violation_variables = 0,
-	    width = 0;
-	long double copy_cost;
+	    regularity_violation_variables = 0, width = 0;
+	long double copy_cost = 0, regularity_violations_total = 0;
 };
 
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, vertex_info> Graph;

@@ -46,7 +46,7 @@ Clause::Clause(std::vector<Literal> literals, const std::pair<std::shared_ptr<co
 	// Find out if the current clause was the direct result of a violation
 	if(this->removed_variables[removed] == true)
 	{
-		this->regularity_violations++;
+		this->regularity_violations += 1;
 		this->reremoved_variables[removed] = true;
 		//std::cout << "Removed " << removed << " again for " << *this << std::endl;
 	}
@@ -224,7 +224,7 @@ boost::optional<int> Clause::removed_variable() const
 	return this->removed_var;
 }
 
-long long Clause::num_regularity_violations() const
+long double Clause::num_regularity_violations() const
 {
 	return this->regularity_violations;
 }

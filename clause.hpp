@@ -29,7 +29,7 @@ public:
 	void is_learned(bool l);
 	bool is_axiom() const;
 	boost::optional<int> removed_variable() const;
-	long long num_regularity_violations() const;
+	long double num_regularity_violations() const;
 	std::vector<int> regularity_violation_variables() const;
 	long double copy_cost() const;
 
@@ -43,6 +43,6 @@ private:
 	boost::optional<int> removed_var;
 	std::vector<bool> removed_variables;
 	std::vector<bool> reremoved_variables;
-	long long regularity_violations;
+	long double regularity_violations;
 	long double cost;
 };
