@@ -11,6 +11,13 @@
 #include <memory>
 #include <stdlib.h>
 
+void jsonPrinFloat(std::ostream& s, long double value) {
+	if (value == std::numeric_limits<long double>::infinity())
+		std::cout << "\"inf\"";
+	else
+		std::cout << value;
+}
+
 int main(int argc, char** argv)
 {
 	// The three ignore modes modes are:
@@ -58,7 +65,7 @@ int main(int argc, char** argv)
 			std::cout << "ERROR: Ignore mode must be between 0 and 2" << std::endl;
 			return 1;
 		}
-					
+
 		mode = static_cast<ignore_mode>(raw);
 	}
 
@@ -68,7 +75,7 @@ int main(int argc, char** argv)
 		print_graph = true;
 		graph_file.open(file_name, std::fstream::out);
 		if(vm.count("include-unused")) print_with_unused = true;
-	}	
+	}
 
 	if(vm.count("print-input")) print_input = true;
 
@@ -89,7 +96,7 @@ int main(int argc, char** argv)
 		{
 			int num;
 			ss >> num;
-			
+
 			solver.num_vars(num);
 		}
 		else if(instruction == "I")
@@ -204,7 +211,7 @@ int main(int argc, char** argv)
 				}
 				else if(instruction == "L")
 				{
-					
+
 					int ref, num_literals;
 					std::vector<Literal> literals;
 					ss >> ref >> num_literals;
@@ -307,9 +314,12 @@ int main(int argc, char** argv)
 			std::cout << "\"used_learned\": " << s.used_learned << ", \"unused_learned\": " << s.unused_learned << ",";
 
 			std::cout << "\"tree_edge_violations\": " << s.tree_edge_violations << ", \"tree_vertex_violations\": " << s.tree_vertex_violations << ",";
-			std::cout << "\"tree_copy_cost\": " << s.copy_cost << ", ";
+			std::cout << "\"tree_copy_cost\": ";
+			jsonPrinFloat(std::cout, s.copy_cost);
+			std::cout << ", ";
 
 			std::cout << "\"regularity_violations_total\": " << s.regularity_violations_total << ", \"regularity_violation_variables\": " << s.regularity_violation_variables << ",";
+
 			std::cout << "\"max_width\": " << s.width << "}" << std::endl;
 			exit(0);
 		}
