@@ -12,10 +12,7 @@
 #include <stdlib.h>
 
 void jsonPrinFloat(std::ostream& s, long double value) {
-	if (value == std::numeric_limits<long double>::infinity())
-		std::cout << "\"inf\"";
-	else
-		std::cout << value;
+	s << "\"" << value << "\"";
 }
 
 int main(int argc, char** argv)
