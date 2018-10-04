@@ -35,6 +35,9 @@ public:
 
 	static std::shared_ptr<const Clause> resolve(const std::shared_ptr<const Clause>& clause, const std::shared_ptr<const Clause>& other);
 	static std::shared_ptr<const Clause> resolve(const std::vector<std::shared_ptr<const Clause> > clauses);
+
+	bool violated_regularity() const;
+	long violated_regularity_variable() const;
 private:
 	std::vector<Literal> literal_vector;
 	friend std::ostream & operator<<(std::ostream &os, const Clause& c);
@@ -42,7 +45,9 @@ private:
 	bool learned;
 	boost::optional<int> removed_var;
 	std::vector<bool> removed_variables;
-	std::vector<bool> reremoved_variables;
-	long double regularity_violations;
+
 	long double cost;
+
+	bool _violated_regularity;
+	long _violated_regularity_variable;
 };

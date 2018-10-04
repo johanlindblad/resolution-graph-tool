@@ -13,7 +13,8 @@ Clause::Clause(std::vector<Literal> literals)
 
 	this->learned = false;
 	this->removed_var = boost::none;
-	this->regularity_violations = 0;
+
+	this->_violated_regularity = false;
 
 	// An axiom clause has no parents, and so copying it costs 1
 	this->cost = 1;
@@ -24,31 +25,21 @@ Clause::Clause(std::vector<Literal> literals, const std::pair<std::shared_ptr<co
 	this->parents = source;
 	this->learned = false;
 	this->removed_var = removed;
+	this->_violated_regularity = false;
 
-	// The number of regularity violations is the sum of violations along both paths, and possibly also
-	// +1 if we arrived here by re-removing an already removed variable
-	this->regularity_violations = source.first->regularity_violations + source.second->regularity_violations;
-
-	// Copy the removed and reremoved variables vectors from the first source and merge
-	// with second source
 	this->removed_variables = source.first->removed_variables;
-	this->reremoved_variables = source.first->reremoved_variables;
 	const std::vector<bool>& other_removed = source.second->removed_variables;
-	const std::vector<bool>& other_reremoved = source.second->reremoved_variables;
 
 	size_t required_size = std::max(other_removed.size(), (size_t) removed + 1);
 	if(this->removed_variables.size() < required_size) this->removed_variables.resize(required_size);
-	if(this->reremoved_variables.size() < required_size) this->reremoved_variables.resize(required_size);
 
 	for(int i=0; i < other_removed.size(); i++) if(other_removed[i] == true) this->removed_variables[i] = true;
-	for(int i=0; i < other_reremoved.size(); i++) if(other_reremoved[i] == true) this->reremoved_variables[i] = true;
 
 	// Find out if the current clause was the direct result of a violation
 	if(this->removed_variables[removed] == true)
 	{
-		this->regularity_violations += 1;
-		this->reremoved_variables[removed] = true;
-		//std::cout << "Removed " << removed << " again for " << *this << std::endl;
+		this->_violated_regularity = true;
+		this->_violated_regularity_variable = removed;
 	}
 	this->removed_variables[removed] = true;
 
@@ -64,9 +55,9 @@ Clause::Clause(const Clause& other)
 	this->learned = other.learned;
 	this->removed_var = other.removed_var;
 	this->removed_variables = other.removed_variables;
-	this->reremoved_variables = other.reremoved_variables;
-	this->regularity_violations = other.regularity_violations;
 	this->cost = other.cost;
+	this->_violated_regularity = other._violated_regularity;
+	this->_violated_regularity_variable = other._violated_regularity_variable;
 }
 
 Clause::Clause(const Clause& other, bool is_learned) : Clause(other)
@@ -224,22 +215,17 @@ boost::optional<int> Clause::removed_variable() const
 	return this->removed_var;
 }
 
-long double Clause::num_regularity_violations() const
-{
-	return this->regularity_violations;
-}
-
 long double Clause::copy_cost() const
 {
 	return this->cost;
 }
 
-std::vector<int> Clause::regularity_violation_variables() const
+bool Clause::violated_regularity() const
 {
-	std::vector<int> violations;
+	return this->_violated_regularity;
+}
 
-	for(int i=0; i < reremoved_variables.size(); i++)
-		if(reremoved_variables[i] == true) violations.push_back(i);
-
-	return violations;
+long Clause::violated_regularity_variable() const
+{
+	return this->_violated_regularity_variable;
 }
